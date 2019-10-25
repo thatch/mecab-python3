@@ -62,17 +62,26 @@ def compile_flags_for_platform():
 
 def checkout_and_build_libmecab(basedir):
     from os import environ
-    from os.path import isdir, isfile, join as p_join
+    from os.path import isdir, isfile, join as p_join, exists
     from sys import stderr
     from time import sleep
     from utils import get_parallel_jobs, run, chdir, mkdir_p, touch, symlink
 
     if basedir:
         chdir(basedir)
-    mkdir_p(LIBMECAB_DIR)
 
-    if isdir(p_join(LIBMECAB_DIR, ".git")):
-        # assume already checked out
+    if environ.get('LIBMECAB_DIR'):
+        # This lets you point at an extracted tarball
+        run("ls", "-l", environ.get("LIBMECAB_DIR"))
+        assert exists(p_join(environ.get("LIBMECAB_DIR"), "mecab", "aclocal.m4"))
+        assert not exists(LIBMECAB_DIR)
+        run("rsync", "-avP", "--delete-during", environ.get('LIBMECAB_DIR') + "/", LIBMECAB_DIR)
+        run("ls", "-l", LIBMECAB_DIR)
+    else:
+        mkdir_p(LIBMECAB_DIR)
+
+    if exists(p_join(LIBMECAB_DIR, "mecab", "aclocal.m4")):
+        # assume already checked out/extracted
         chdir(p_join(LIBMECAB_DIR, "mecab"))
 
     else:
